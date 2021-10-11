@@ -1,6 +1,6 @@
 use crate::dom::{AttrMap, Element, Node};
 use combine::error::ParseError;
-use combine::parser::char::{char, letter, newline, space};
+use combine::parser::char::{char, letter, newline, space, string};
 use combine::{between, many, many1, parser, satisfy, Parser, Stream};
 
 /// `attribute` consumes `name="value"`.
@@ -38,8 +38,14 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    todo!("you need to implement this combinator");
-    (char(' ')).map(|_| ("".to_string(), AttrMap::new()))
+    let open_tag_name = many1::<String, _, _>(letter());
+    let open_tag_content = (
+        open_tag_name,
+        many::<String, _, _>(space().or(newline())),
+        attributes(),
+    )
+        .map(|v: (String, _, AttrMap)| (v.0, v.2));
+    between(char('<'), char('>'), open_tag_content)
 }
 
 /// close_tag consumes `</tag_name>`.
@@ -48,8 +54,8 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    todo!("you need to implement this combinator");
-    (char(' ')).map(|_| ("".to_string()))
+    let open_tag_name = many1::<String, _, _>(letter());
+    between(string("</"), char('>'), open_tag_name)
 }
 
 // `nodes_` (and `nodes`) tries to parse input as Element or Text.
